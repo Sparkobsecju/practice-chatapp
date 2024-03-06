@@ -1,0 +1,134 @@
+ package com.example.chatapp.activities;
+
+ import android.content.Intent;
+ import android.os.Bundle;
+ import android.util.Patterns;
+ import android.view.View;
+ import android.widget.Toast;
+
+ import androidx.appcompat.app.AppCompatActivity;
+
+ import com.example.chatapp.databinding.ActivitySignInBinding;
+ import com.example.chatapp.utilities.Constants;
+ import com.example.chatapp.utilities.PreferenceManager;
+ import com.google.firebase.firestore.DocumentSnapshot;
+ import com.google.firebase.firestore.FirebaseFirestore;
+
+ public class SignInActivity extends AppCompatActivity {
+
+    private ActivitySignInBinding binding;
+    private PreferenceManager preferenceManager;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        preferenceManager = new PreferenceManager(getApplicationContext());
+        if (preferenceManager.getBoolean(Constants.KEY_IS_SIGNED_IN)) {
+            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+            startActivity(intent);
+            finish();
+        }
+        binding = ActivitySignInBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        setListener();
+    }
+
+    private void setListener() {
+        binding.textCreateAccount.setOnClickListener(v ->
+                startActivity(new Intent(getApplicationContext(), SignUpActivity.class)));
+        // Enabling MultiDex: -> check the build.gradle
+//        binding.buttonSignIn.setOnClickListener(v -> addDataToFirestore());
+        /*
+        * Android application (APK) files contain executable bytecode files in the form
+        * of Dalvik Executable (DEX) files, which contain the compiled code used to run
+        * your app.The Dalvik Executable specification limits the total number of methods
+        * that can be referenced within a single DEX file to 65,536, including Android
+        * framework methods, library methods, and methods in your own code. Getting past
+        * this limit requires that you configure your app build process to generate more
+        * than one DEX file, known as a MultiDex configuration.
+        * */
+
+        binding.buttonSignIn.setOnClickListener(v -> {
+            if (isValidSignInDetails()) {
+                signIn();
+            }
+        });
+    }
+
+    /*
+    * We will add dummy data to the cloud firestore database in order to check whether
+    * the cloud firestore is set up correctly or not.
+    * */
+//     private void addDataToFirestore() {
+//         FirebaseFirestore database = FirebaseFirestore.getInstance();
+//         HashMap<String, Object> data = new HashMap<>();
+//         data.put("first_name", "Stanley");
+//         data.put("last_name", "Lee");
+//         database.collection("users")
+//                 .add(data)
+//                 .addOnSuccessListener(documentReference -> {
+//                     Toast.makeText(getApplicationContext(), "Data Inserted",
+//                             Toast.LENGTH_SHORT).show();
+//                 })
+//                 .addOnFailureListener(exception -> {
+//                     Toast.makeText(getApplicationContext(), exception.getMessage(),
+//                             Toast.LENGTH_SHORT).show();
+//                 });
+//     }
+
+     private void signIn() {
+         loading(true);
+         FirebaseFirestore database = FirebaseFirestore.getInstance();
+         database.collection(Constants.KEY_COLLECTION_USERS)
+                 .whereEqualTo(Constants.KEY_EMAIL, binding.inputEmail.getText().toString())
+                 .whereEqualTo(Constants.KEY_PASSWORD, binding.inputPassword.getText().toString())
+                 .get()
+                 .addOnCompleteListener(task -> {
+                     if (task.isSuccessful() && task.getResult() != null
+                            && task.getResult().getDocuments().size() > 0) {
+                         DocumentSnapshot documentSnapshot = task.getResult().getDocuments().get(0);
+                         preferenceManager.putBoolean(Constants.KEY_IS_SIGNED_IN, true);
+                         preferenceManager.putString(Constants.KEY_USER_ID, documentSnapshot.getId());
+                         preferenceManager.putString(Constants.KEY_NAME, documentSnapshot.getString(Constants.KEY_NAME));
+                         preferenceManager.putString(Constants.KEY_IMAGE, documentSnapshot.getString(Constants.KEY_IMAGE));
+                         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                         startActivity(intent);
+                     } else {
+                         loading(false);
+                         showToast("Unable to sign in");
+                     }
+                 });
+     }
+
+     private void loading(Boolean isLoading) {
+         if (isLoading) {
+             binding.buttonSignIn.setVisibility(View.INVISIBLE);
+             binding.progressBar.setVisibility(View.VISIBLE);
+         } else {
+             binding.progressBar.setVisibility(View.INVISIBLE);
+             binding.buttonSignIn.setVisibility(View.VISIBLE);
+         }
+     }
+
+     private void showToast(String message) {
+         Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+     }
+
+     private Boolean isValidSignInDetails() {
+         if (binding.inputEmail.getText().toString().trim().isEmpty()) {
+             showToast("Enter email");
+             return false;
+         } else if (!Patterns.EMAIL_ADDRESS.matcher(binding.inputEmail.getText().toString()).matches()) {
+             showToast("Enter valid email");
+             return false;
+         } else if (binding.inputPassword.getText().toString().trim().isEmpty()) {
+             showToast("Enter password");
+             return false;
+         } else {
+             return true;
+         }
+     }
+
+
+}
