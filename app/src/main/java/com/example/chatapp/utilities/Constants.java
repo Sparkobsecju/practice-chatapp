@@ -37,7 +37,7 @@ public class Constants {
     public static final String REMOTE_MSG_AUTHORIZATION = "Authorization";  // Authorization
     public static final String REMOTE_MSG_CONTENT_TYPE = "Content-Type";    // Content-Type
     public static final String REMOTE_MSG_DATA = "data";                    // data
-    public static final String REMOTE_MSG_REGISTATION_IDS = "registration_ids";     // registration_ids
+    public static final String REMOTE_MSG_REGISTRATION_IDS = "registration_ids";     // registration_ids
 
 // cloud key notification
     public static HashMap<String, String> remoteMsgHeaders = null;
@@ -48,6 +48,8 @@ public class Constants {
                     REMOTE_MSG_AUTHORIZATION,
                     "key=BOURBw8leASvt3OpcBC3B_nhu8E8aV6OQthjRL6fEAB23sI3GF-jYkRTjg11JOtHa7AJwfLDbK9DwpLweSdNwFY"
             );
+            // Paste the server key which we have copied from the firebase console. Make sure you write "key=" prefix before the server key.
+
             remoteMsgHeaders.put(
                     REMOTE_MSG_CONTENT_TYPE,
                     "application/json"
